@@ -18,11 +18,7 @@ sim = SimUtils('pendulum.xml',simend)
 interact = Interactions(sim.model, sim.data, sim.cam, sim.opt)
 
 #controller code
-controller = Controller()
-controller.init_controller(sim.model,sim.data)
-
-#set the controller
-mj.set_mjcb_control(controller.controller)
+control = Controller(sim)
 
 n=len(sys.argv)
 #print(n)
@@ -32,8 +28,11 @@ else:
     pass
 
 
-sim.data.qpos[0] = 1
+sim.data.qpos[0] = 0.01
+
 #execute until the window is closed
+mj.set_mjcb_control(control.energy_shaping_controller)
+
 while not interact.window_closed(interact.window):
 
     time_prev = sim.data.time

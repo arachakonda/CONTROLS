@@ -1,12 +1,21 @@
 class Controller:
 
-    def __init__(self,):
-        pass
+    def __init__(self, sim):
+        self.model = sim.model
+        self.data = sim.data
+        self.option = sim.option
 
-    def init_controller(self,model,data):
+    def init_controller(self,):
         #initialize the controller here. This function is called once, in the beginning
-        pass
+        pass    
 
-    def controller(self,model, data):
+    def energy_shaping_controller(self,model, data):
         #put the controller here. This function is called inside the simulation.
-        pass
+        te = self.data.energy[0] + self.data.energy[1]
+        max_pe = 1*abs(self.option.gravity[2])*3
+        #print(max_pe)
+        e = te - max_pe
+        #print(e)
+        k = 0.01
+        #print(-k*self.data.qvel[0]*e)
+        self.data.ctrl[0] = -k*self.data.qvel[0]*e

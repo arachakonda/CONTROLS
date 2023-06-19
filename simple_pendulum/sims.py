@@ -13,4 +13,4 @@ class SimUtils:
         self.data = mj.MjData(self.model)                # MuJoCo data
         self.cam = mj.MjvCamera()                        # Abstract camera
         self.opt = mj.MjvOption()                        # visualization options
-
+        self.option = mj.MjOption()
