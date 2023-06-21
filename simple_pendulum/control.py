@@ -19,3 +19,6 @@ class Controller:
         k = 0.01
         #print(-k*self.data.qvel[0]*e)
         self.data.ctrl[0] = -k*self.data.qvel[0]*e
+
+    def pid_controller(self,model, data):
+        
