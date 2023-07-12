@@ -21,4 +21,7 @@ class Controller:
         self.data.ctrl[0] = -k*self.data.qvel[0]*e
 
     def pid_controller(self,model, data):
-        
+        pass
+
+    def swing_up_and_stabilize_controller(self,mode,data):
+        pass
