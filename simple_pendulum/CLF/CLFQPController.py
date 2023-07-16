@@ -5,7 +5,7 @@ import time
 import cvxpy as cp
 
 class CLFControls:
-    def __init__(self, sym_x, sym_f, sym_g, sym_clf, rate=0.1):
+    def __init__(self, sym_x, sym_f, sym_g, sym_clf, u_max, u_min,rate=0.1):
         if sym_x is None or sym_f is None or sym_g is None:
             raise ValueError('x, f, g is empty. Create a class function defineSystem and define your dynamics with symbolic expression.')
         
@@ -29,6 +29,10 @@ class CLFControls:
         #setting f and g as a function
         self.f = lambdify((x), f_, modules='numpy')
         self.g = lambdify((x), g_, modules='numpy')
+
+        self.u_max = u_max
+        self.u_min = u_min
+
 
         #obtaining the lie derivatives of the CLF
         #if sym_clf is not empty, then calculate the lie derivatives and simplify them
@@ -55,17 +59,17 @@ class CLFControls:
     #          when qp is infeasible, u is determined from quadprog.)
     #          comp_time: computation time to run the solver.
     def clf_qp(self, x, u_ref, with_slack=0):
-        # if the clf is empty raise error that it cannot be used
+        
         if self.clf is None:
             raise ValueError('clf is empty. Create a class function defineSystem and define your dynamics with symbolic expression.')
-        #if the u_ref is empty, set it to zero
+        
         if u_ref is None:
             u_ref = np.zeros(self.u_dim)
-        #if the with_slack is empty, set it to 1
+        
         if with_slack is None:
             with_slack = 1
         
-        #if the length of u_ref is not equal to u_dim, raise error
+        
         if len(u_ref) != self.u_dim:
             raise ValueError('u_ref is not the same dimension as the input dimension of the system.')
 
@@ -88,7 +92,7 @@ class CLFControls:
                     b = np.vstack((b, self.u_max))
                 else:
                     raise ValueError("u_max should be either a scalar value or an (udim, 1) array.")
-            if self.u_min in self.params:
+            if self.u_min is not None:
                 A = np.vstack((A, -np.eye(self.udim), np.zeros((self.udim, 1))))
                 if self.u_min.shape[0] == 1:
                     b = np.vstack((b, -self.u_min * np.ones((self.udim, 1))))
@@ -117,10 +121,7 @@ class CLFControls:
                 else:
                     raise ValueError("u_min should be either a scalar value or an (udim, 1) array.")
             
-        #cost function: 1/2*[u;slack]'*H*[u;slack] + f'*[u;slack]
-        # H = [weight_input, zeros(obj.udim, 1);
-        #     zeros(1, obj.udim), obj.params.weight.slack];
-        # f_ = [-weight_input * u_ref; 0];
+        # cost function: 1/2 * [u;slack]'*H*[u;slack] + f'*[u;slack]
         H = np.zeros((self.u_dim+1, self.u_dim+1))
         H[:self.u_dim, :self.u_dim] = self.weight_input
         H[self.u_dim, self.u_dim] = self.params.weight.slack
