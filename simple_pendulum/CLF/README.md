@@ -1,6 +1,6 @@
 # CONTROLS/simple_pendulum/CLF
 
-note that this error returned by the [rk.py](http://rk.py) in scipy.integrate.solve_ivp is circumvented by changing the method rk_step(fun, t, y, f, h, A, B, C, K) as follows:
+note that this error returned by the rk.py in scipy.integrate.solve_ivp is circumvented by changing the method rk_step(fun, t, y, f, h, A, B, C, K) as follows:
 
 ```python
 def rk_step(fun, t, y, f, h, A, B, C, K):

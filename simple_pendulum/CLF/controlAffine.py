@@ -55,7 +55,7 @@ class CtrlAffineSys:
     def dynamics(self, t, x, u):
         # Inputs: t: time, x: state, u: control input
         # Output: dx: xdot
-        dx = self.f(x[0],x[1]) + self.g(x[0],x[1]) * u
+        dx = self.f(x[0],x[1],x[2]) + self.g(x[0],x[1],x[2]) * u
         return dx
     
     def init_sys(self, symbolic_x, symbolic_f, symbolic_g, symbolic_cbf, symbolic_clf):
@@ -100,10 +100,10 @@ class CtrlAffineSys:
             lg_clf_ = dclf * g_
             print("symbolic_clf: ",symbolic_clf)
             print("x : ",x)
-            self.clf = lambdify([x[0],x[1]], symbolic_clf, 'numpy')
-            self.lf_clf = lambdify([x[0],x[1]], lf_clf_, 'numpy')
+            self.clf = lambdify(x, symbolic_clf, 'numpy')
+            self.lf_clf = lambdify(x, lf_clf_, 'numpy')
             # TODO: add sanity check of relative degree.
-            self.lg_clf = lambdify([x[0],x[1]], lg_clf_, 'numpy')
+            self.lg_clf = lambdify(x, lg_clf_, 'numpy')
     
     def ctrl_clf_qp(self, x, u_ref=None, with_slack=True, verbose=False):
         if self.clf is None:
@@ -116,9 +116,9 @@ class CtrlAffineSys:
             raise ValueError("Wrong size of u_ref, it should be (udim, 1) array.")
 
         tstart = time.time()
-        V = self.clf(x[0], x[1])
-        LfV = self.lf_clf(x[0], x[1])
-        LgV = self.lg_clf(x[0], x[1])
+        V = self.clf(x[0], x[1],x[2])
+        LfV = self.lf_clf(x[0], x[1], x[2])
+        LgV = self.lg_clf(x[0], x[1], x[2])
 
         if with_slack:
             # CLF constraint.
@@ -179,8 +179,17 @@ class CtrlAffineSys:
         else:
             weight_input = np.eye(self.udim)
 
+        if hasattr(self.params['weight'],'slack'):
+            if self.params['weight']['slack'].size == 1:
+                weight_slack = self.params['weight']['slack'] * np.eye(1)
+            elif self.params['weight']['slack'].shape == (1, 1):
+                weight_slack = self.params['weight']['slack']
+            else:
+                raise ValueError("params.weight.slack should be either a scalar value or an (1, 1) array.")
+        else:
+            weight_slack = np.eye(1)
         H = np.block([[weight_input, np.zeros((self.udim, 1))],
-                    [np.zeros((1, self.udim)), self.params['weight']['slack']]])
+                    [np.zeros((1, self.udim)), weight_slack]])
         f_ = np.vstack([-np.dot(weight_input, u_ref), np.zeros((1, 1))])
 
         # Define optimization variables.

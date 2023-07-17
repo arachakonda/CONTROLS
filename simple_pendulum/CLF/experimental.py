@@ -13,8 +13,8 @@ params = {
     'mass': 1,        # [kg]       mass of pendulum
     'gravity': 9.81,  # [m/s^2]    acceleration of gravity
     'friction': 0.01,  # [s*Nm/rad] friction coefficient
-    'u_max': 7,
-    'u_min': -7,
+    'u_max': 100,
+    'u_min': -100,
     'I': 1/3,  # Assumed moment of inertia
     'Kp': 6,
     'Kd': 5,
@@ -26,7 +26,7 @@ params = {
     }
 }
 
-x0 = np.array([0.76, 0.05])  # Initial state
+x0 = np.array([1, 0.05])  # Initial state
 
 ip_sys = InvertedPendulum(params)
 
@@ -34,7 +34,7 @@ controller = ip_sys.ctrl_clf_qp
 
 # Simulation settings
 dt = 0.02
-sim_t = 5
+sim_t = 10
 total_k = int(np.ceil(sim_t / dt))
 
 # Initialize traces
