@@ -48,18 +48,19 @@ x = x0
 t = 0
 
 # Store initial state
-xs[0, :] = x0
+xs[0] = x0
 ts[0] = t
 
 # Simulation loop
 for k in range(total_k - 1):
     # Determine control input.
-    u = controller(x)
+    u,slack,V,feas,comp = controller(x)
+    print(u)
     us[k] = u
     # Run one time step propagation.
     sol = solve_ivp(lambda t, s: ip_sys.dynamics(t, s, u), [t, t + dt], x, t_eval=[t + dt])
     x = sol.y[:, -1]
-    xs[k + 1, :] = x
+    xs[k + 1] = x
     ts[k + 1] = sol.t[-1]
     t += dt
 

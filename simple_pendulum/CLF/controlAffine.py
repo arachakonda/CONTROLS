@@ -2,7 +2,7 @@ from sympy import Matrix, simplify, lambdify
 import sympy as sym
 import numpy as np
 import time
-from scipy.optimize import minimize
+import cvxpy as cp
 
 class CtrlAffineSys:
     def __init__(self, params=None):
@@ -52,18 +52,10 @@ class CtrlAffineSys:
         cbf = None
         return cbf
 
-    def init_sys(self, x, f, g, cbf, clf):
-        self.xdim = x  # Set state dimension
-        self.udim = 1  # Set control input dimension to 1 (modify as needed)
-        self.f = f  # Set drift term
-        self.g = g  # Set control vector fields
-        self.cbf = cbf  # Set Control Barrier Function
-        self.clf = clf  # Set Control Lyapunov Function
-
     def dynamics(self, t, x, u):
         # Inputs: t: time, x: state, u: control input
         # Output: dx: xdot
-        dx = self.f(x) + self.g(x) * u
+        dx = self.f(x[0],x[1]) + self.g(x[0],x[1]) * u
         return dx
     
     def init_sys(self, symbolic_x, symbolic_f, symbolic_g, symbolic_cbf, symbolic_clf):
@@ -80,7 +72,10 @@ class CtrlAffineSys:
         else:
             g_ = symbolic_g
 
-        x = symbolic_x
+        if not isinstance(symbolic_x, Matrix):
+            x = Matrix(symbolic_x)
+        else:
+            x = symbolic_x
         # Setting state and input dimension.
         self.xdim = x.shape[0]
         self.udim = g_.shape[1]
@@ -100,118 +95,113 @@ class CtrlAffineSys:
 
         # Obtaining Lie derivatives of CLF.
         if symbolic_clf is not None:
-            dclf = symbolic_clf.jacobian(symbolic_x)
+            dclf = sym.simplify(symbolic_clf.jacobian(symbolic_x))
             lf_clf_ = dclf * f_
             lg_clf_ = dclf * g_
-            self.clf = lambdify(x, symbolic_clf)
-            self.lf_clf = lambdify(x, lf_clf_)
+            print("symbolic_clf: ",symbolic_clf)
+            print("x : ",x)
+            self.clf = lambdify([x[0],x[1]], symbolic_clf, 'numpy')
+            self.lf_clf = lambdify([x[0],x[1]], lf_clf_, 'numpy')
             # TODO: add sanity check of relative degree.
-            self.lg_clf = lambdify(x, lg_clf_)
+            self.lg_clf = lambdify([x[0],x[1]], lg_clf_, 'numpy')
     
     def ctrl_clf_qp(self, x, u_ref=None, with_slack=True, verbose=False):
         if self.clf is None:
             raise ValueError('CLF is not defined so ctrlClfQp cannot be used. Create a class function [defineClf] and set up clf with symbolic expression.')
 
         if u_ref is None:
-            # If u_ref is not given, CLF-QP minimizes the norm of u
             u_ref = np.zeros((self.udim, 1))
 
         if u_ref.shape != (self.udim, 1):
             raise ValueError("Wrong size of u_ref, it should be (udim, 1) array.")
 
         tstart = time.time()
-        print(self.clf)
-        V = self.clf(x)
-        # Lie derivatives of the CLF.
-        LfV = self.lf_clf(x)
-        LgV = self.lg_clf(x)
+        V = self.clf(x[0], x[1])
+        LfV = self.lf_clf(x[0], x[1])
+        LgV = self.lg_clf(x[0], x[1])
 
-        # Constraints: A[u; slack] <= b
         if with_slack:
             # CLF constraint.
-            A = np.hstack((LgV, -1))
-            b = -LfV - self.params.clf.rate * V
-            # Add input constraints if u_max or u_min exists.
+            slack_column = np.full((LgV.shape[0], 1), -1)
+            A = np.hstack((LgV, slack_column))
+            b = -LfV - self.params['clf']['rate'] * V
+
+            # Input constraints.
             if hasattr(self.params, 'u_max'):
                 A = np.vstack((A, np.hstack((np.eye(self.udim), np.zeros((self.udim, 1))))))
-                if self.params.u_max.size == 1:
-                    b = np.vstack((b, self.params.u_max * np.ones((self.udim, 1))))
-                elif self.params.u_max.size == self.udim:
-                    b = np.vstack((b, self.params.u_max))
+                if self.params['u_max'].size == 1:
+                    b = np.vstack((b, self.params['u_max'] * np.ones((self.udim, 1))))
+                elif self.params['u_max'].size == self.udim:
+                    b = np.vstack((b, self.params['u_max']))
                 else:
                     raise ValueError("params.u_max should be either a scalar value or an (udim, 1) array.")
 
             if hasattr(self.params, 'u_min'):
                 A = np.vstack((A, np.hstack((-np.eye(self.udim), np.zeros((self.udim, 1))))))
-                if self.params.u_min.size == 1:
-                    b = np.vstack((b, -self.params.u_min * np.ones((self.udim, 1))))
-                elif self.params.u_min.size == self.udim:
-                    b = np.vstack((b, -self.params.u_min))
+                if self.params['u_min'].size == 1:
+                    b = np.vstack((b, -self.params['u_min'] * np.ones((self.udim, 1))))
+                elif self.params['u_min'].size == self.udim:
+                    b = np.vstack((b, -self.params['u_min']))
                 else:
                     raise ValueError("params.u_min should be either a scalar value or an (udim, 1) array.")
         else:
             # CLF constraint.
             A = LgV
-            b = -LfV - self.params.clf.rate * V
-            # Add input constraints if u_max or u_min exists.
+            b = -LfV - self.params['clf']['rate'] * V
+
+            # Input constraints.
             if hasattr(self.params, 'u_max'):
                 A = np.vstack((A, np.eye(self.udim)))
-                if self.params.u_max.size == 1:
-                    b = np.vstack((b, self.params.u_max * np.ones((self.udim, 1))))
-                elif self.params.u_max.size == self.udim:
-                    b = np.vstack((b, self.params.u_max))
+                if self.params['u_max'].size == 1:
+                    b = np.vstack((b, self.params['u_max'] * np.ones((self.udim, 1))))
+                elif self.params['u_max'].size == self.udim:
+                    b = np.vstack((b, self.params['u_max']))
                 else:
                     raise ValueError("params.u_max should be either a scalar value or an (udim, 1) array.")
 
             if hasattr(self.params, 'u_min'):
                 A = np.vstack((A, -np.eye(self.udim)))
-                if self.params.u_min.size == 1:
-                    b = np.vstack((b, -self.params.u_min * np.ones((self.udim, 1))))
-                elif self.params.u_min.size == self.udim:
-                    b = np.vstack((b, -self.params.u_min))
+                if self.params['u_min'].size == 1:
+                    b = np.vstack((b, -self.params['u_min'] * np.ones((self.udim, 1))))
+                elif self.params['u_min'].size == self.udim:
+                    b = np.vstack((b, -self.params['u_min']))
                 else:
                     raise ValueError("params.u_min should be either a scalar value or an (udim, 1) array.")
 
         # Cost
-        if hasattr(self.params.weight, 'input'):
-            if self.params.weight.input.size == 1:
-                weight_input = self.params.weight.input * np.eye(self.udim)
-            elif self.params.weight.input.shape == (self.udim, self.udim):
-                weight_input = self.params.weight.input
+        if hasattr(self.params['weight'], 'input'):
+            if self.params['weight']['input'].size == 1:
+                weight_input = self.params['weight']['input'] * np.eye(self.udim)
+            elif self.params['weight']['input'].shape == (self.udim, self.udim):
+                weight_input = self.params['weight']['input']
             else:
                 raise ValueError("params.weight.input should be either a scalar value or an (udim, udim) array.")
         else:
             weight_input = np.eye(self.udim)
 
         H = np.block([[weight_input, np.zeros((self.udim, 1))],
-                    [np.zeros((1, self.udim)), self.params.weight.slack]])
+                    [np.zeros((1, self.udim)), self.params['weight']['slack']]])
         f_ = np.vstack([-np.dot(weight_input, u_ref), np.zeros((1, 1))])
 
-        if with_slack:
-            # cost = 0.5 [u' slack] H [u; slack] + f [u; slack]
-            res = minimize(lambda z: 0.5 * np.dot(z, np.dot(H, z)) + np.dot(f_.T, z),
-                        np.zeros((self.udim + 1, 1)), constraints={'type': 'ineq', 'fun': lambda z: np.dot(A, z) - b})
-            u_slack = res.x
-            if res.success:
-                feas = True
-                u = u_slack[:self.udim]
-            else:
-                feas = False
-                print("Infeasible QP. Numerical error might have occurred.")
-                # Making up best-effort heuristic solution.
-                u = np.zeros((self.udim, 1))
-                for i in range(self.udim):
-                    u[i] = self.params.u_min * (LgV[i] > 0) + self.params.u_max * (LgV[i] <= 0)
-        else:
-            res = minimize(lambda z: 0.5 * np.dot(z, np.dot(H, z)) + np.dot(f_.T, z),
-                        np.zeros((self.udim, 1)), constraints={'type': 'ineq', 'fun': lambda z: np.dot(A, z) - b})
-            u = res.x
-            if res.success:
-                feas = True
-            else:
-                feas = False
-                print("Infeasible QP. CLF constraint is conflicting with input constraints.")
+        # Define optimization variables.
+        z = cp.Variable(self.udim + 1)
+
+        # Define the objective and constraints.
+        objective = cp.Minimize(0.5 * cp.quad_form(z, H) + f_.T @ z)
+        constraints = [A @ z <= b]
+
+        # Create the problem and solve it.
+        problem = cp.Problem(objective, constraints)
+        result = problem.solve()
+
+        # Extract the optimal control input.
+        u_slack = z.value
+        u = u_slack[:self.udim]
+
+        # Check if the problem was feasible.
+        feas = problem.status == cp.OPTIMAL
 
         slack = u_slack[-1] if with_slack else []
         comp_time = time.time() - tstart
+
         return u, slack, V, feas, comp_time
