@@ -26,7 +26,7 @@ params = {
     }
 }
 
-x0 = np.array([1, 0.05])  # Initial state
+x0 = np.array([2, 0.05])  # Initial state
 
 ip_sys = InvertedPendulum(params)
 

@@ -55,7 +55,11 @@ class CtrlAffineSys:
     def dynamics(self, t, x, u):
         # Inputs: t: time, x: state, u: control input
         # Output: dx: xdot
-        dx = self.f(x[0],x[1],x[2]) + self.g(x[0],x[1],x[2]) * u
+        #if length of x is 2 then return dx accordingly
+        if len(x) == 2:
+            dx = self.f(x[0],x[1]) + self.g(x[0],x[1]) * u
+        elif len(x) == 3:
+            dx = self.f(x[0],x[1],x[2]) + self.g(x[0],x[1],x[2]) * u
         return dx
     
     def init_sys(self, symbolic_x, symbolic_f, symbolic_g, symbolic_cbf, symbolic_clf):
@@ -116,9 +120,14 @@ class CtrlAffineSys:
             raise ValueError("Wrong size of u_ref, it should be (udim, 1) array.")
 
         tstart = time.time()
-        V = self.clf(x[0], x[1],x[2])
-        LfV = self.lf_clf(x[0], x[1], x[2])
-        LgV = self.lg_clf(x[0], x[1], x[2])
+        if(len(x) == 2):
+            V = self.clf(x[0], x[1])
+            LfV = self.lf_clf(x[0], x[1])
+            LgV = self.lg_clf(x[0], x[1])
+        elif(len(x) == 3):
+            V = self.clf(x[0], x[1],x[2])
+            LfV = self.lf_clf(x[0], x[1], x[2])
+            LgV = self.lg_clf(x[0], x[1], x[2])
 
         if with_slack:
             # CLF constraint.
