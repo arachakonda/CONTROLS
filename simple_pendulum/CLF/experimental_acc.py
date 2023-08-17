@@ -21,9 +21,9 @@ params = {
     'clf': {'rate': 5},
     'cbf': {'rate': 5},
     'weight': {
-        'slack': 2e-2,
-    },
-    'weight':{'input': 2/1650**2}
+    'slack': 2e-2,
+    'input': 2/1650**2
+    }
 }
 
 acc_sys = ACC(params)
@@ -47,11 +47,9 @@ xs[0] = x0
 ts[0] = 0
 
 for k in range(total_k - 1):
-    u, slack[k], V, feas, comp = controller(xs[k])
+    u, slack[k], V, feas = controller(xs[k])
     us[k] = u
     Vs[k] = V
-    
-
     #evaluate dynamics after one time step
     sol = solve_ivp(lambda t, s: acc_sys.dynamics(t, s, u), [ts[k], ts[k] + dt], xs[k], t_eval=[ts[k] + dt])
     x = sol.y[:, -1]

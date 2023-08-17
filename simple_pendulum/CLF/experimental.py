@@ -11,7 +11,7 @@ from invertedPendulum import InvertedPendulum
 params = {
     'length': 1,      # [m]        length of pendulum
     'mass': 1,        # [kg]       mass of pendulum
-    'gravity': 9.81,  # [m/s^2]    acceleration of gravity
+    'gravity': -9.81,  # [m/s^2]    acceleration of gravity
     'friction': 0.01,  # [s*Nm/rad] friction coefficient
     'u_max': 100,
     'u_min': -100,
@@ -22,11 +22,11 @@ params = {
         'rate': 3,
     },
     'weight': {
-        'slack': 100000,
+        'slack': 10,
     }
 }
 
-x0 = np.array([2, 0.05])  # Initial state
+x0 = np.array([np.pi/2, 0])  # Initial state
 
 ip_sys = InvertedPendulum(params)
 
@@ -54,7 +54,7 @@ ts[0] = t
 # Simulation loop
 for k in range(total_k - 1):
     # Determine control input.
-    u,slack,V,feas,comp = controller(x)
+    u,slack,V,feas = controller(x)
     print(u)
     us[k] = u
     # Run one time step propagation.
