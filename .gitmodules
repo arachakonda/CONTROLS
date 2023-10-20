@@ -1,0 +1,3 @@
+[submodule "Controls/MPC"]
+	path = Controls/MPC
+	url = git@github.com:arachakonda/MPC.git
