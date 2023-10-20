@@ -1,0 +1,100 @@
+<mujoco model="Bionic">
+	<compiler angle="radian" meshdir="../../myproject/SARHARC/meshes/"/>
+	<option gravity="0 0 0"/>
+	<size njmax="500" nconmax="100"/>
+	<default/>
+	<asset>
+		<mesh name="base_link" file="base_link.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="index_Middle_Phalanx_1" file="index_Middle_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="index_Distal_Phalanx_1" file="index_Distal_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="index_Proximal_Phalanx_1" file="index_Proximal_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="Middle_Proximal_Phalanx_1" file="Middle_Proximal_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="Middle_Middle_Phalanx_1" file="Middle_Middle_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="Middle_Distal_Phalanx_1" file="Middle_Distal_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="Ring_Proximal_Phalanx_1" file="Ring_Proximal_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="Ring_Middle_Phalanx_1" file="Ring_Middle_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="Ring_Distal_Phalanx_1" file="Ring_Distal_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="Little_Proximal_Phalanx_1" file="Little_Proximal_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="Little_Middle_Phalanx_1" file="Little_Middle_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+		<mesh name="Little_Distal_Phalanx_1" file="Little_Distal_Phalanx_1.stl" scale="0.001 0.001 0.001"/>
+	</asset>
+	<worldbody>
+		<!--<body name="palm" pos="0 0 0">-->
+			<geom type="mesh" mesh="base_link" conaffinity="0" contype="0"/>
+			<!--<inertial pos="0.0002 -0.56706 -0.49245" mass="0.349081" diaginertia="0.00001 0.00001 0.00001"/>-->
+			<body name="index_Proximal_Phalanx_1" pos="0 0 0">
+				<inertial pos="-0.00186787 2.090e-09 0.0149081" quat="0.997581 0 -0.0695188 0" mass="0.0757404" diaginertia="0.00001 0.00001 0.00001"/>
+				<joint name="imcp" pos="0 0 0" axis="0 1 0" limited="true" range="-0.087266 1.5708"/>
+				<geom type="mesh" mesh="index_Proximal_Phalanx_1"/>
+				<body name="index_Middle_Phalanx_1" pos="-0.002402 0 0.043381">
+					<inertial pos="0.00216012 3.89371e-09 0.0110989" quat="0.923884 0 -0.382672 0" mass="0.0194308" diaginertia="0.00001 0.00001 0.00001"/>
+					<joint name="ipip" pos="0 0 0" axis="0 1 0" limited="true" range="0 1.309"/>
+					<geom pos="0.002402 0 -0.043381" type="mesh" mesh="index_Middle_Phalanx_1"/>
+					<body name="index_Distal_Phalanx_1" pos="-0.000136 0 0.025062">
+						<inertial pos="0.00041102 3.71244e-08 0.00892009" quat="0.923884 0 -0.382672 0" mass="0.010372" diaginertia="0.00001 0.00001 0.00001"/>
+						<joint name="idip" pos="0 0 0" axis="0 1 0" limited="true" range="0 1.22173"/>
+						<geom pos="0.002538 0 -0.068443" type="mesh" mesh="index_Distal_Phalanx_1"/>
+					</body>
+				</body>
+			</body>
+		<!--</body>-->
+	</worldbody>
+	<tendon>
+		<fixed name="index_distal_flexion" limited="true" range="-1 1">
+			<joint joint="idip"  coef="-0.004434"/>
+			<joint joint="ipip" coef="-0.00464658"/>
+			<joint joint="imcp" coef="-0.016865"/>
+		</fixed>
+		<fixed name="index_distal_extension" limited="true" range="-1 1">
+			<joint joint="idip"  coef="0.004434"/>
+			<joint joint="ipip" coef="0.00464658"/>
+			<joint joint="imcp" coef="0.016865"/>
+		</fixed>
+		<fixed name="index_middle_extension" limited="true" range="-1 1">
+			<joint joint="ipip" coef="0.00464658"/>
+			<joint joint="imcp" coef="0.016865"/>
+		</fixed>
+		<fixed name="index_proximal_extension" limited="true" range="-1 1">
+			<joint joint="imcp" coef="0.016865"/>
+		</fixed>
+
+	</tendon>
+	<sensor>
+		<jointpos name="Index pos DIP"	joint="idip"/>
+		<jointpos name="Index pos PIP" joint="ipip"/>
+		<jointpos name="Index pos MCP" joint="imcp"/>
+
+		<tendonpos name="IDF pos" tendon="index_distal_flexion"/>
+		<tendonpos name="IDE pos" tendon="index_distal_extension"/>
+		<tendonpos name="IME pos" tendon="index_middle_extension"/>
+		<tendonpos name="IPE pos" tendon="index_proximal_extension"/>
+
+		<jointvel name="Index vel DIP"	joint="idip"/>
+		<jointvel name="Index vel PIP" joint="ipip"/>
+		<jointvel name="Index vel MCP" joint="imcp"/>
+
+		<tendonvel name="IDF vel" tendon="index_distal_flexion"/>
+		<tendonvel name="IDE vel" tendon="index_distal_extension"/>
+		<tendonvel name="IME vel" tendon="index_middle_extension"/>
+		<tendonvel name="IPE vel" tendon="index_proximal_extension"/>
+
+		<actuatorfrc name="IDF_frc" actuator="A_idipf"/>
+		<actuatorfrc name="IDE_frc" actuator="A_idipe"/>
+		<actuatorfrc name="IME_frc" actuator="A_ipipe"/>
+		<actuatorfrc name="IPE_frc" actuator="A_imcpe"/>
+
+	</sensor>
+	<actuator>
+		<general name="A_idipf"  tendon="index_distal_flexion" ctrllimited="true" ctrlrange="-5 0" gainprm="1" gear="1"/>
+		<general name="A_idipe"  tendon="index_distal_extension" ctrllimited="true" ctrlrange="-5 0" gainprm="1" gear="1"/>
+		<general name="A_ipipe"  tendon="index_middle_extension" ctrllimited="true" ctrlrange="-5 0" gainprm="1" gear="1"/>
+		<general name="A_imcpe"  tendon="index_proximal_extension" ctrllimited="true" ctrlrange="-5 0" gainprm="1" gear="1"/>
+
+		<motor joint="imcp" name="imcp_torque" gear="1" ctrllimited="true" ctrlrange="-0.15 0.15" />
+		<motor joint="ipip" name="ipip_torque" gear="1" ctrllimited="true" ctrlrange="-0.15 0.25" />
+		<motor joint="idip" name="idip_torque" gear="1" ctrllimited="true" ctrlrange="-0.15 0.15" />
+
+
+
+	</actuator>
+</mujoco>

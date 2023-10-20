@@ -1,0 +1,52 @@
+<mujoco model="Socket_Assem_URDF">
+  <default/>
+  <visual>
+		<scale framelength="0.1" framewidth="0.03"/>
+	</visual>
+  <option>
+    <flag sensornoise="enable"/>
+  </option>
+  <asset>
+    <mesh name="base" file="meshes/base.stl"/>
+    <mesh name="top" file="meshes/top.stl"/>
+    <mesh name="big_shell" file="meshes/big_shell.stl"/>
+    <mesh name="small_shell" file="meshes/small_shell.stl"/>
+    <mesh name="shaft" file="meshes/shaft.stl"/>
+    <mesh name="washer" file="meshes/washer.stl"/>
+  </asset>
+  <worldbody>
+  <light diffuse="0.5 0.5 0.5" pos="0 0 1" dir="0 0 -1"/>
+	<geom type="plane" size="0.5 0.5 0.01" pos="0 0 -0.05" rgba="0.5 0.5 0.5 1"/>
+  <!-- <body name="shell" pos="0 0 0" euler="0 0 0" gravcomp="0">
+      <geom type="mesh" rgba="0.737254902	0.7568627451	0.3450980392 1" mesh="base" contype="0" conaffinity="0"/>
+      <geom type="mesh" rgba="0.9098039216	0.7607843137	0.431372549 1" mesh="top" contype="0" conaffinity="0"/>
+        <body name="big_shell" pos="0 0 0" euler="0 0 0">
+          <joint name="J0" type="hinge" pos="0 0 0" axis="0 1 0" limited="true" range="-30 30"/>
+          <geom type="mesh" rgba="0.3921568627	0.8235294118	0.7960784314 1" mesh="big_shell" contype="0" conaffinity="0" />
+        </body> -->
+        <body name="small_shell" pos="0 0 0" euler="0 0 0">
+          <inertial pos="-0.000082	4.05E-08	0.00036" mass="0.007333" fullinertia="0.000000130616	0.000000439447	0.000000494245	-3.00E-12	0.000000001536	-1.00E-12"/>
+          <joint name="J1" type="hinge" pos="0 0 0" axis="1 0 0" limited="true" range="-30 30"/>
+          <geom type="mesh" rgba="0.6980392157	0.8705882353	0.4078431373 1" mesh="small_shell"/>
+          <body name="shaft" pos="0 0 0" euler="0 0 0">
+            <inertial pos="0	0	0.015087" mass="0.011232" fullinertia="0.000001484703	0.000001471823	0.000000499734	2.00E-12	-2.20E-11	6.00E-12"/>
+            <joint type="hinge" name="J2" pos="0 0 0" axis="0 1 0" limited="true" range="-30 30"/><!--theta--><!--alpha-->
+            <geom type="mesh" rgba="0.9882352941	0.5921568627	0.3921568627 1" mesh="shaft"/>
+          </body>
+        </body>
+  <!-- </body> -->
+  </worldbody>
+  <contact>
+        <!-- <exclude name="exclude_cont_shells" body1="big_shell" body2="small_shell"/> -->
+  </contact>
+  <actuator>
+    <motor name="small_shell_torque" gear="1" joint="J1"/>
+    <motor name="shaft_torque" gear="1" joint="J2"/>
+  </actuator>
+  <sensor>
+    <jointpos name="small_shell_pos"  noise="0" joint="J1"/>
+    <jointvel name="small_shell_vel" noise="0" joint="J1"/>
+    <jointpos name="shaft_pos" noise="0" joint="J2"/>
+    <jointvel name="shaft_vel" noise="0" joint="J2"/>
+  </sensor>
+</mujoco>
